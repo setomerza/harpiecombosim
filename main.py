@@ -13,6 +13,6 @@ def main(deck_txt, n):
     combo_sim(deck, n)
 
 # Using 25000 so it runs quicker as this is an online IDE
-main("Decklists/Harpies_42", 300000)
+main("Decklists/Harpies_60", 300000)
 
 

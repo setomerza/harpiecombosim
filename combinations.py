@@ -2,7 +2,7 @@ from sets import *
 
 # Verifies if hand can combo successfully
 
-def combo(hand, deck):
+def combo(hand, deck, souls_drawn):
     debug = False
     win = False
     play_vs_nibiru = False
@@ -15,10 +15,6 @@ def combo(hand, deck):
     # Checks if drawn handtraps
     open_ht, open_two_hts = two_hts(hand)
 
-    # Add barrier statue to the combo list if multiple are being played
-    if deck.count("Barrier Statue of the Stormwinds") >= 2:
-        normal_summon_non_harpies.append("Barrier Statue of the Stormwinds")
-
     # Instantly play through Imperm if Red Reboot/Midbreaker opened
     if ("Red Reboot" in hand) | ("Magical Mid-Breaker Field" in hand):
         play_vs_imperm = True
@@ -30,9 +26,16 @@ def combo(hand, deck):
 
             # Case if no phalanx in deck, then it is not combo
             if phalanx_brick(hand, deck):
-                if i == "Harpie Perfumer":
+                if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                    if i == "Harpie Perfumer":
+                        bricked_on_phalanx = True
+                        possible_win = False
+            elif coltwing_brick(hand, deck):
+                if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
                     bricked_on_phalanx = True
                     possible_win = False
+                    partial_combo = True
+
 
             if possible_win:
                 win = True
@@ -43,8 +46,6 @@ def combo(hand, deck):
                     play_vs_nibiru = True
                 if ("Swallow's Nest" in hand) & ("Harpie Perfumer" in hand):
                     play_vs_imperm = True
-                if "Quick Launch" in hand:
-                    play_vs_imperm = not quick_launch_brick(hand, deck)
                 if "Hysteric Sign" in hand:
                     discarded_sign = True
                 break
@@ -58,19 +59,14 @@ def combo(hand, deck):
                 possible_win = True
                 chan_hand.remove(i)
 
-                for j in harpie_extender + ["Unexpected Dai"]:
-                    if (("Gravedigger's Trap Hole" not in chan_hand) &
-                            ("Gravedigger's Trap Hole" in deck) & (j in chan_hand)):
-                        # Make Traptrix Rafflesia in 5 Summons
-                        play_vs_nibiru = True
-
-                    if ("World Chalice Guardragon" in hand):
-                        play_vs_imperm = True
-
                 # Case if no phalanx in deck, then it is not combo
-                if phalanx_brick(chan_hand, deck):
-                    bricked_on_phalanx = True
-                    possible_win = False
+                if phalanx_brick(chan_hand, deck) | coltwing_brick(hand, deck):
+                    if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                        bricked_on_phalanx = True
+                        possible_win = False
+                        partial_combo = True
+                    if debug:
+                        print("Channeler Partial Combo")
 
                 if possible_win:
                     win = True
@@ -81,287 +77,226 @@ def combo(hand, deck):
                         play_vs_nibiru = True
                     if "Swallow's Nest" in chan_hand:
                         play_vs_imperm = True
-                    if "Quick Launch" in chan_hand:
-                        play_vs_imperm = not quick_launch_brick(chan_hand, deck)
                     if "Hysteric Sign" in chan_hand:
                         discarded_sign = True
                     break
 
-    # Combo with a harpie + harpie extender
+    # Combo with a normal summon tuner + extender
     if (not win) or not play_vs_nibiru:
-        for i in normal_summon_harpies + ["Unexpected Dai"]:
-            for j in harpie_extender + no_monster_extender :
+        for i in normal_summon_tuners:
+            for j in non_tuner_extender + tuner_extender:
                 if (i in hand) & (j in hand) & (i != j):
                     possible_win = True
-                    has_vanilla = False
-
-                    if (j in vanilla_access) | (i in vanilla_access):
-                        has_vanilla = True
 
                     extender_test_hand = hand.copy()
                     extender_test_hand.remove(j)
                     # Board will be 2 winged beasts (1 guaranteed harpie) with possible vanilla access
-                    winged_beasts = 2
-                    for k in egotist_extender:
-                        if k in extender_test_hand:
-                            # Could potentially discard hysteric sign here
-                            if k == "Hysteric Sign":
-                                discarded_sign = True
-                            winged_beasts += 1
-                            has_vanilla = True
-                            extender_test_hand.remove(k)
 
-                    for l in egotist_extender:
-                        if l in extender_test_hand:
-                            winged_beasts += 1
-                            has_vanilla = True
-                            extender_test_hand.remove(l)
+                    # Case if no coltwing in deck, then it is not combo
+                    if coltwing_brick(hand, deck):
+                        if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                            possible_win = False
+                            bricked_on_phalanx = True
+                            partial_combo = True
 
-                    if "Harpie Perfumer" in hand:
-                        # Perfumer counts as 2
-                        winged_beasts += 1
-
-                    if ("Garuda the Wind Spirit" in extender_test_hand) & has_vanilla:
-                        winged_beasts += 1
-
-                    if "Quick Launch" in hand:
-                        play_vs_imperm = not quick_launch_brick(hand, deck)
-                        if play_vs_imperm:
-                            winged_beasts += 1
-
-                    #Discard World Chalice Guardragon to negate Imperm vs Linked Romulus
-                    if ((winged_beasts >= 3) & ("World Chalice Guardragon" in hand)):
-                        play_vs_imperm = True
-
-                    if ((winged_beasts >= 4) & ("Gravedigger's Trap Hole" not in hand)
-                            & ("Gravedigger's Trap Hole" in deck)):
-                        play_vs_nibiru = True
-
-                    # Case if no phalanx in deck, then it is not combo
-                    if phalanx_brick(hand, deck):
-                        bricked_on_phalanx = True
+                    if i == "Creation Resonator":
                         possible_win = False
+                        partial_combo = True
 
                     if possible_win:
                         win = True
                         if debug:
-                            print("Harpie + Harpie Extender Combo. " + str(winged_beasts) + " Bodies")
+                            print("Normal Summon Tuner + Extender Combo.")
+                        if ("Harpie's Feather Storm" in hand) and (j == "Unexpected_Dai"):
+                            feather_stormed = True
+                        if "Hysteric Sign" in hand:
+                            discarded_sign = True
+                        break
+
+    # Combo with a normal summon harpie + extender
+    if (not win) or not play_vs_nibiru:
+        for i in normal_summon_harpies + ["Unexpected Dai"]:
+            for j in harpie_extender + tuner_extender:
+                if (i in hand) & (j in hand):
+                    possible_win = True
+
+                    # Case if no phalanx in deck, then it is not combo
+                    if phalanx_brick(hand, deck):
+                        if j in harpie_extender:
+                            if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                                bricked_on_phalanx = True
+                                possible_win = False
+                                partial_combo = True
+
+                    if coltwing_brick(hand, deck):
+                        if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                            possible_win = False
+                            bricked_on_phalanx = True
+                            partial_combo = True
+
+                    if possible_win:
+                        win = True
+                        if debug:
+                            print("Normal Summon Harpie + Extender Combo.")
                         if "Harpie's Feather Storm" in hand:
                             feather_stormed = True
                             play_vs_nibiru = True
-                        break
-
-    # Combo with a non-harpie + no monster SS
-    if (not win) or not play_vs_nibiru:
-        for i in normal_summon_non_harpies:
-            for j in no_monster_extender:
-                if (i in hand) & (j in hand):
-                    possible_win = True
-
-                    # Case if no phalanx in deck, then it is not combo
-                    if phalanx_brick(hand, deck):
-                        bricked_on_phalanx = True
-                        possible_win = False
-
-                    if possible_win:
-                        win = True
-                        if debug:
-                            print("No Monster SS + Dragon Combo")
-                        if ("Harpie's Feather Storm" in hand) and (j == "Unexpected Dai"):
-                            feather_stormed = True
-                            play_vs_nibiru = True
-                        if "Quick Launch" in hand:
-                            play_vs_imperm = not quick_launch_brick(hand, deck)
-                        if "Hysteric Sign" in hand:
+                        if ("Hysteric Sign" in hand) and (j != "Hysteric Sign"):
                             discarded_sign = True
                         break
 
-    # Combo with Lvl 4 winged beast + extender
-    if (not win) or not play_vs_nibiru:
-        for i in lvl4_winged_beast:
-            for j in lvl4_winged_beast_extender:
-                if (i in hand) & (j in hand):
-                    possible_win = True
-
-                    # Case if no phalanx in deck, then it is not combo
-                    if phalanx_brick(hand, deck):
-                        bricked_on_phalanx = True
-                        possible_win = False
-
-                    if possible_win:
-                        win = True
-                        if debug:
-                            print("Lvl 4 winged beast + extender combo")
-                        if ("Harpie's Feather Storm" in hand) and ((j == "Unexpected Dai") | (j == "Swallow's Nest")):
-                            feather_stormed = True
-                            play_vs_nibiru = True
-                        if "Quick Launch" in hand:
-                            play_vs_imperm = not quick_launch_brick(hand, deck)
-                        if "Hysteric Sign" in hand:
-                            discarded_sign = True
-                        break
-
-    # Combo with Vanilla + World Chalice Guardragon
-    if (not win) or not play_vs_nibiru:
-        for i in vanilla_access:
-            if i in hand:
-                possible_win = False
-                temp_hand = hand.copy()
-                if "World Chalice Guardragon" in hand:
-                    temp_hand.remove("World Chalice Guardragon")
-                    possible_win = True
-
-                if "Tempest, Dragon Ruler of Storms" in hand:
-                    for j in wind_attribute:
-                        if j in hand:
-                            # Tempest + Discard for WCG
-                            possible_win = True
+    # Combo with Small World into Perfumer
+    if ((not win) or not play_vs_nibiru) & ("Small World" in hand):
+        sw_hand = hand.copy()
+        sw_hand.remove("Small World")
+        for i in small_world_perfumer_targets:
+            if i in sw_hand:
+                possible_win = True
+                sw_hand.remove(i)
 
                 # Case if no phalanx in deck, then it is not combo
-                if phalanx_brick(hand, deck):
-                    bricked_on_phalanx = True
-                    possible_win = False
+                if phalanx_brick(hand, deck) | coltwing_brick(hand, deck):
+                    if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                        bricked_on_phalanx = True
+                        possible_win = False
+                        partial_combo = True
 
                 if possible_win:
                     win = True
                     if debug:
-                        print("Vanilla + WCG Combo")
-                    if "Harpie's Feather Storm" in hand:
+                        print("Small World into Perfumer Combo")
+                    if "Harpie's Feather Storm" in sw_hand:
                         feather_stormed = True
                         play_vs_nibiru = True
-
-                    if "World Chalice Guardragon" in temp_hand:
+                    if "Swallow's Nest" in sw_hand:
                         play_vs_imperm = True
-
-                    if "Quick Launch" in hand:
-                        play_vs_imperm = not quick_launch_brick(hand, deck)
-
-                    if "Hysteric Sign" in hand:
+                    if "Hysteric Sign" in sw_hand:
                         discarded_sign = True
                     break
 
-    # Combo with Double Lyrilusc Turquoise Warbler
+    # Combo with a tuner extender + extender
     if (not win) or not play_vs_nibiru:
+        for i in tuner_extender:
+            for j in non_tuner_extender + tuner_extender:
+                if (i in hand) & (j in hand) & (i != j):
+                    possible_win = True
+
+                    if coltwing_brick(hand, deck):
+                        if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                            possible_win = False
+                            bricked_on_phalanx = True
+                            partial_combo = True
+
+                    if possible_win:
+                        win = True
+                        if debug:
+                            print("Tuner Extender + Extender Combo")
+                        if "Hysteric Sign" in hand:
+                            discarded_sign = True
+                        break
+
+    # Combo with Double Lyrilusc Turquoise Warbler
+    if not win:
         if "Lyrilusc - Turquoise Warbler" in hand:
             lyrilusc_hand = hand.copy()
             lyrilusc_hand.remove("Lyrilusc - Turquoise Warbler")
             if "Lyrilusc - Turquoise Warbler" in lyrilusc_hand:
                 possible_win = True
-
                 # Case if no phalanx in deck, then it is not combo
-                if phalanx_brick(hand, deck):
-                    bricked_on_phalanx = True
-                    possible_win = False
+                if phalanx_brick(hand, deck) | coltwing_brick(hand, deck):
+                    if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                        bricked_on_phalanx = True
+                        possible_win = False
+                        partial_combo = True
 
                 if possible_win:
                     win = True
                     if debug:
-                        print("Double Lyrilusc Turquoise Warbler")
-
-                    if "Quick Launch" in hand:
-                        play_vs_imperm = not quick_launch_brick(hand, deck)
-
+                        print("Double Warbler Combo")
                     if "Hysteric Sign" in hand:
                         discarded_sign = True
 
-                    for i in normal_summon_harpies:
-                        if ("Harpie's Feather Storm" in lyrilusc_hand) & (i in lyrilusc_hand):
-                            feather_stormed = True
-                            play_vs_nibiru = True
-                            if "World Chalice Guardragon" in hand:
-                                play_vs_imperm = True
-
-                    if "Harpie Channeler" in lyrilusc_hand:
-                        lyrilusc_hand.remove("Harpie Channeler")
-                        for j in harpie_card:
-                            if (("Gravedigger's Trap Hole" not in lyrilusc_hand) & ("Gravedigger's Trap Hole" in deck) &
-                                    (j in lyrilusc_hand)):
-                                # Make Traptrix Rafflesia in 5 Summons
-                                play_vs_nibiru = True
-
-                            if ("Swallow's Nest" in hand) | ("World Chalice Guardragon" in hand):
-                                play_vs_imperm = True
-
-                    if "Harpie Perfumer" in lyrilusc_hand:
-                        if ("Gravedigger's Trap Hole" not in lyrilusc_hand) & ("Gravedigger's Trap Hole" in deck):
-                            # Make Traptrix Rafflesia in 5 Summons
-                            play_vs_nibiru = True
-
-                        if ("Swallow's Nest" in hand) | ("World Chalice Guardragon" in hand):
-                            play_vs_imperm = True
-
-                    for i in normal_summon_harpies:
-                        for j in harpie_extender:
-                            if (i in hand) & (j in hand):
-                                # Make Traptrix Rafflesia in 5 Summons
-                                play_vs_nibiru = True
-
-                            if (i in hand) & ("World Chalice Guardragon" in hand):
-                                play_vs_imperm = True
-
-    # Combo with Vanilla + Garuda the Wind Spirit
-    if (not win) or not play_vs_nibiru:
+    # Combo with Vanilla + World Chalice Guardragon
+    if not win:
         for i in vanilla_access:
-            if (i in hand) & ("Garuda the Wind Spirit" in hand):
+            if (i in hand) & ("World Chalice Guardragon" in hand):
                 possible_win = True
-
                 # Case if no phalanx in deck, then it is not combo
-                if phalanx_brick(hand, deck):
-                    bricked_on_phalanx = True
-                    possible_win = False
+                if phalanx_brick(hand, deck) | coltwing_brick(hand, deck):
+                    if ("Illusion of Chaos" not in hand) & ("Preparation of Rites" not in hand):
+                        bricked_on_phalanx = True
+                        possible_win = False
+                        partial_combo = True
 
                 if possible_win:
                     win = True
                     if debug:
-                        print("Vanilla + Garuda Combo")
+                        print("Vanilla + WCG Combo")
+                    if "Hysteric Sign" in hand:
+                        discarded_sign = True
                     if "Harpie's Feather Storm" in hand:
                         feather_stormed = True
                         play_vs_nibiru = True
-                    if "Quick Launch" in hand:
-                        play_vs_imperm = not quick_launch_brick(hand, deck)
-                    if "Hysteric Sign" in hand:
-                        discarded_sign = True
                     break
 
-    #Quick Launch combos
-    if (not win) or not play_vs_nibiru:
-        for i in lvl4_winged_beast + no_monster_extender + normal_summon_non_harpies:
-            if (i in hand) & ("Quick Launch" in hand):
-                possible_win = True
+    # If unable to combo, attempt to draw with souls
+    if not win:
+        for i in magicians_souls:
+            if (i in hand) & (souls_drawn == False):
+                temp_hand = hand.copy()
+                temp_hand, deck = souls_draw(temp_hand, deck)
+                if "Hysteric Sign" in hand:
+                    discarded_sign = True
 
-                # Case if no quick launch targets in deck
-                if quick_launch_brick(hand, deck):
-                    possible_win = False
+                result = combo(temp_hand, deck, True)
+                if debug:
+                    print("Attempting Souls Hand:" + ', '.join(map(str, temp_hand)))
+                win = result[0]
+                partial_combo = result[6]
+                break
 
-                # Case if no phalanx in deck, then it is not combo
-                if phalanx_brick(hand, deck):
-                    bricked_on_phalanx = True
-                    possible_win = False
-
-                if possible_win:
-                    win = True
-                    if debug:
-                        print("Quick Launch Combo")
-                    if "Harpie's Feather Storm" in hand:
-                        for j in normal_summon_harpies + ["Unexpected Dai"]:
-                            if j in hand:
-                                feather_stormed = True
-                                play_vs_nibiru = True
-                    if "Hysteric Sign" in hand:
-                        discarded_sign = True
-                    break
-
-    # Combo with  Phalanx + Divine Lance
-    if (not win) or (not play_vs_nibiru) or (not partial_combo):
-        if ("Dragunity Phalanx" in hand) & ("Dragunity Divine Lance" in hand):
-            if phalanx_brick(hand, deck):
-                bricked_on_phalanx = True
-            else:
-                win = True
+    #Check for Coltwing partial combo
+    if (not win) & ("Mecha Phantom Beast Coltwing" in hand):
+        for i in tuner_extender + non_tuner_extender:
+            if i in hand:
+                partial_combo = True
                 if "Hysteric Sign" in hand:
                     discarded_sign = True
                 if debug:
-                    print("Phalanx + Divine Lance combo")
+                    print("Partial Combo - Coltwing + Extender")
+                break
+
+    #Check for other partial combos
+    if (not win) & ("Fusion Destiny" in deck):
+        if "Fusion Destiny" in hand:
+            partial_combo = True
+            if debug:
+                print("Partial Combo - Hard open Fusion Destiny")
+            if "Hysteric Sign" in hand:
+                discarded_sign = True
+        else:
+            for i in non_tuner_extender:
+                for j in normal_summon_non_tuners:
+                    if (i in hand) & (j in hand):
+                        partial_combo = True
+                        if debug:
+                            print("Partial Combo - 2 Non tuners")
+                        if "Hysteric Sign" in hand:
+                            discarded_sign = True
+                        break
+
+            if not partial_combo:
+                for i in magicians_souls:
+                    if i in hand:
+                        temp_hand = hand.copy()
+                        temp_hand.remove(i)
+                        if "Magicians' Souls" in temp_hand:
+                            partial_combo = True
+                            if debug:
+                                print("Partial Combo - Double Souls")
+                            if "Hysteric Sign" in hand:
+                                discarded_sign = True
+                            break
 
     win_nibiru = (win | partial_combo) & play_vs_nibiru
     win_imperm = win & play_vs_imperm

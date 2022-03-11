@@ -1,6 +1,6 @@
 import random
-from combinations import *
 
+from combinations import *
 
 # Shuffles deck
 def shuffle(deck):
@@ -19,6 +19,7 @@ def draw(deck, n):
 
 # Keeps track of numbers times we can successfully combo
 def combo_sim(deck, n):
+    debug = False
     success_no_hts = 0
     success_2hts = 0
     success_vs_nibiru = 0
@@ -30,9 +31,10 @@ def combo_sim(deck, n):
     num_feather_storm = 0
     for i in range(0, n):
         test_hand = draw(deck, 5)
-        #print("Hand: " + ', '.join(map(str, test_hand)))
+        if debug:
+            print("Hand: " + ', '.join(map(str, test_hand)))
         shuffle(deck)
-        results = combo(test_hand, deck)
+        results = combo(test_hand, deck, False)
         if results[0]:
             success_no_hts += 1
         if results[1]:
@@ -75,20 +77,25 @@ def combo_sim(deck, n):
     prev_results = dataFile.readline().split(" ")
 
     dataFile.close()
-    print("Combo Success Rate through no Handtraps: " + str(no_hts_ratio) +
+    print("Full Combo Success Rate through no Handtraps: " + str(no_hts_ratio) +
           "% (Prev: " + prev_results[0] + "%)")
-    #print("Full + Partial Combo Success Rate through no Handtraps: " + str(full_partial_ratio) + "%")
-    print("Combo Success Rate through Nibiru: " + str(nibiru_ratio) + "% (Prev: " + prev_results[1] + "%)")
-    print("Combo Success Rate through Imperm: " + str(imperm_ratio) + "% (Prev: " + prev_results[4] + "%)")
-    print("Combo with drawing at least 1 extra Handtrap/Disruption: " + str(open_ht_ratio) +
+    if "Fusion Destiny" in deck:
+        print("Partial Combo/DPE Success Rate through no Handtraps: " + str(full_partial_ratio) +
+          "% (Prev: " + prev_results[7] + "%)")
+    #print("Combo Success Rate through Nibiru: " + str(nibiru_ratio) + "% (Prev: " + prev_results[1] + "%)")
+    #print("Combo Success Rate through Imperm: " + str(imperm_ratio) + "% (Prev: " + prev_results[4] + "%)")
+    print("Combo with drawing at least 1 Handtrap/Defensive Card: " + str(open_ht_ratio) +
           "% (Prev: " + prev_results[2] + "%)")
-    #if "Hysteric Sign" in deck:
-        #print("Combo with discarding Hysteric Sign: " + str(hysteric_ratio) + "% (Prev: " + prev_results[3] + "%)")
+    print("Combo with drawing at least 2 Handtrap/Defensive Cards: " + str(two_hts_ratio) +
+          "% (Prev: " + prev_results[6] + "%)")
+    if "Hysteric Sign" in deck:
+        print("Discarding Hysteric Sign: " + str(hysteric_ratio) + "% (Prev: " + prev_results[3] + "%)")
     print("Feather Storm Rate: " + str(feather_storm_ratio) + "% (Prev: " + prev_results[5] + "%)")
-    print("Phalanx Brick Rate: " + str(phalanx_brick_ratio) + "%")
-    # print("Combo with atleast drawing 2 Handtraps in your hand: " + str(two_hts_ratio) + "%")
+    print("Coltwing/Phalanx Brick Rate: " + str(phalanx_brick_ratio) + "% (Prev: " + prev_results[8] + "%)")
+
 
     dataFile = open("Previous_Run.txt", "w+")
     dataFile.write(str(no_hts_ratio) + " " + str(nibiru_ratio) + " " + str(open_ht_ratio) + " " + str(hysteric_ratio) +
-                   " " + str(imperm_ratio) + " " + str(feather_storm_ratio))
+                   " " + str(imperm_ratio) + " " + str(feather_storm_ratio) + " " + str(two_hts_ratio) +
+                   " " + str(full_partial_ratio) + " " + str(phalanx_brick_ratio))
     dataFile.close()
